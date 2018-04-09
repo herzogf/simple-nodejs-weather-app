@@ -18,12 +18,15 @@ spec:
       containers:
       - name: wweather-app
         image: wwidevregistry.azurecr.io/weather:latest
+        imagePullPolicy: Always
         env:
         - name: OPENWEATHER_API_KEY
           valueFrom:
             secretKeyRef:
               name: openweather
               key: OPENWEATHER_API_KEY
+        - name: buildNumber
+          value: '#{Build.BuildId}#'
         ports:
         - containerPort: 8080
         livenessProbe:
