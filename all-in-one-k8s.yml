@@ -1,0 +1,72 @@
+---
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: weather
+  labels:
+    app: weather
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: weather
+  template:
+    metadata:
+      labels:
+        app: weather
+    spec:
+      containers:
+      - name: wweather-app
+        image: wwidevregistry.azurecr.io/weather:latest
+        env:
+        - name: OPENWEATHER_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openweather
+              key: OPENWEATHER_API_KEY
+        ports:
+        - containerPort: 8080
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          failureThreshold: 2
+      restartPolicy: Always
+      imagePullSecrets:
+      - name: wwidevregistry
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: weather
+spec:
+  selector:
+    app: weather
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: traefik
+  name: weather
+spec:
+  rules:
+  - host: weather-dev.13.82.190.197.nip.io
+    http:
+      paths:
+      - backend:
+          serviceName: weather
+          servicePort: 8080
